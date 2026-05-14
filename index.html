@@ -399,7 +399,7 @@
 
   <!-- ===================== TELA 1 ===================== -->
   <div id="screen1" class="screen active">
-    <p class="question">Você vai para o date amanhã com João?</p>
+    <p class="question">Você vai para o date amanhã (15/05) com João?🤔</p>
     <div class="buttons-row">
       <button class="btn-yes" onclick="goToScreen2()">CLARO!</button>
       <button class="btn-no" id="btnNo1" onmouseenter="runAway()" onclick="runAway()">Não.</button>
@@ -408,7 +408,7 @@
 
   <!-- ===================== TELA 2 ===================== -->
   <div id="screen2" class="screen">
-    <p class="question" style="font-size:clamp(32px,7vw,60px)">Está empolgada?</p>
+    <p class="question" style="font-size:clamp(32px,7vw,60px)">Está empolgada?🤩</p>
     <div class="buttons-row">
       <button class="btn-yes" onclick="goToScreen3()">MUITO!</button>
       <button class="btn-no" id="btnNo2" onclick="explodeBtn(this)">Não.</button>
@@ -458,11 +458,11 @@
       Confirmado então:<br>
       Amanhã às 19 horas.<br>
       No <span id="chosenRestaurant" style="color:#E8821B"></span><br><br>
-      Te espero lá Teté ❤️
+      Te espero lá, Teté ❤️
     </p>
 
     <!-- Botão reiniciar -->
-    <button class="btn-restart" onclick="restartApp()">🔄 Recomeçar</button>
+    <button class="btn-restart" onclick="restartApp()">Recomeçar</button>
 
     <span class="brand">Santola Corp.</span>
   </div>
@@ -476,8 +476,8 @@
   const NOME    = "Teté";
   const HORARIO = "19 horas";
   const restaurants = [
-    "Açougue","Al Mare","Purgatorio","Lotti","Cantina Volpi",
-    "33 Contemporâneo","Ori","Casa Iryna","Amado","GAttai","Alfedo"
+    "Azougue","Al Mare","Purgatorio","Lotti","Cantina Volpi",
+    "33 Contemporâneo","Ori","Casa Iryna","Amado","Gattai","Alfredo'Ro"
   ];
 
   /* ============================================================
@@ -491,6 +491,83 @@
   let currentRestaurant = null;
   let isSpinning        = false;
   let currentAngle      = 0;
+  let audioContext      = null;
+
+  function getAudioContext() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioContext;
+  }
+
+  function playSfx(type = 'click') {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'boom') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    } else if (type === 'spin') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    } else if (type === 'success') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(640, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    } else if (type === 'yay') {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(900, now);
+      filter.Q.setValueAtTime(7, now);
+
+      osc.connect(gain);
+      gain.connect(filter);
+      osc2.connect(gain2);
+      gain2.connect(filter);
+      filter.connect(ctx.destination);
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(980, now + 0.32);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc2.type = 'sawtooth';
+      osc2.frequency.setValueAtTime(760, now);
+      osc2.frequency.exponentialRampToValueAtTime(1120, now + 0.32);
+      gain2.gain.setValueAtTime(0.08, now);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc.start(now);
+      osc2.start(now);
+      osc.stop(now + 0.4);
+      osc2.stop(now + 0.4);
+      return;
+    } else {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(520, now);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    }
+
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
 
   function getWheelSize() {
     const container = document.querySelector('.wheel-container');
@@ -563,6 +640,7 @@
   });
 
   function spinWheel() {
+    playSfx('spin');
     if (isSpinning) return;
     isSpinning = true;
     document.getElementById('resultLabel').textContent = '— girando... —';
@@ -596,13 +674,14 @@
     requestAnimationFrame(animate);
   }
 
-  function selectRestaurant() { if (currentRestaurant) showConfirm(currentRestaurant); }
-  function toggleManual()     { document.getElementById('manualPicker').classList.toggle('show'); }
-  function chooseManual()     { showConfirm(document.getElementById('manualSelect').value); }
+  function selectRestaurant() { if (currentRestaurant) { playSfx('success'); showConfirm(currentRestaurant); } }
+  function toggleManual()     { playSfx('click'); document.getElementById('manualPicker').classList.toggle('show'); }
+  function chooseManual()     { playSfx('click'); showConfirm(document.getElementById('manualSelect').value); }
 
   function showConfirm(restaurant) {
     document.getElementById('chosenRestaurant').textContent = restaurant;
     goToScreen(4);
+    playSfx('yay');
     launchEmojiRain();
   }
 
@@ -639,9 +718,10 @@
     document.getElementById('screen' + n).classList.add('active');
   }
 
-  function goToScreen3() { goToScreen(3); }
+  function goToScreen3() { playSfx('click'); goToScreen(3); }
 
   function restartApp() {
+    playSfx('click');
     clearInterval(rainInterval);
     document.querySelectorAll('.emoji-rain').forEach(e => e.remove());
     currentRestaurant = null;
@@ -691,6 +771,7 @@
   }
 
   function runAway() {
+    playSfx('click');
     initRunawayBtn();
     const bw = runawayBtn.offsetWidth;
     const bh = runawayBtn.offsetHeight;
@@ -706,7 +787,7 @@
     if (original) original.style.visibility = 'visible';
   }
 
-  function goToScreen2() { cleanRunaway(); goToScreen(2); }
+  function goToScreen2() { playSfx('click'); cleanRunaway(); goToScreen(2); }
 
   /* ============================================================
      BOTÃO EXPLODINDO — tela 2 (versão espalhafatosa)
@@ -719,6 +800,7 @@
     const cyPct = (cy / window.innerHeight * 100).toFixed(1) + '%';
     const palette = ['#FF4C3B','#FF8C00','#FFD700','#FF69B4','#FF1493','#FFA500','#fff'];
 
+    playSfx('boom');
     // 1) Flash de tela
     const flash = document.createElement('div');
     flash.className = 'explosion-flash';
