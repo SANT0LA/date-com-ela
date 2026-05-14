@@ -39,13 +39,16 @@
     .screen.active { display: flex; }
 
     .brand {
-      position: absolute;
+      position: fixed;
       bottom: 12px;
       right: 16px;
       font-family: 'Chewy', cursive;
-      font-size: clamp(13px, 2.5vw, 18px);
+      font-size: clamp(14px, 3.5vw, 18px);
       color: #111;
       font-style: italic;
+      z-index: 9000;
+      pointer-events: none;
+      text-shadow: 0 1px 4px rgba(255,255,255,0.9);
     }
 
     /* ---- TELAS 1 e 2 ---- */
@@ -308,15 +311,75 @@
     /* Partículas de explosão */
     .particle {
       position: fixed;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
       pointer-events: none;
-      animation: explode 0.6s ease-out forwards;
+      z-index: 9999;
+      border-radius: 50%;
+      animation: explodePop var(--dur, 0.9s) ease-out forwards;
     }
-    @keyframes explode {
-      0%   { transform: scale(1) translate(0,0); opacity: 1; }
-      100% { transform: scale(0) translate(var(--tx), var(--ty)); opacity: 0; }
+    @keyframes explodePop {
+      0%   { transform: scale(1) translate(0,0) rotate(0deg); opacity: 1; }
+      60%  { opacity: 1; }
+      100% { transform: scale(0.2) translate(var(--tx), var(--ty)) rotate(var(--rot)); opacity: 0; }
+    }
+
+    /* Confetes retangulares */
+    .confetti {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      animation: confettiFly var(--dur, 1.1s) ease-out forwards;
+      border-radius: 2px;
+    }
+    @keyframes confettiFly {
+      0%   { transform: translate(0,0) rotate(0deg) scaleY(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scaleY(0.3); opacity: 0; }
+    }
+
+    /* Flash de tela */
+    .explosion-flash {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at var(--cx) var(--cy), #fff 0%, rgba(255,200,0,0.6) 30%, transparent 70%);
+      pointer-events: none;
+      z-index: 9998;
+      animation: flashOut 0.4s ease-out forwards;
+    }
+    @keyframes flashOut {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Texto BOOM */
+    .boom-text {
+      position: fixed;
+      font-family: 'Chewy', cursive;
+      font-size: clamp(48px, 14vw, 100px);
+      color: #FF4C3B;
+      text-shadow: 3px 3px 0 #FFD700, 6px 6px 0 #FF8C00;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%) scale(0);
+      animation: boomPop 0.6s cubic-bezier(0.17, 0.67, 0.12, 1.4) forwards;
+    }
+    @keyframes boomPop {
+      0%   { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 1; }
+      60%  { transform: translate(-50%, -50%) scale(1.3) rotate(5deg);  opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0.8) rotate(-3deg); opacity: 0; }
+    }
+
+    /* Ondas de choque */
+    .shockwave {
+      position: fixed;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 150, 0, 0.8);
+      pointer-events: none;
+      z-index: 9997;
+      transform: translate(-50%, -50%) scale(0);
+      animation: shockExpand var(--dur, 0.7s) ease-out forwards;
+    }
+    @keyframes shockExpand {
+      0%   { transform: translate(-50%, -50%) scale(0);   opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(4);   opacity: 0; }
     }
 
     /* Mobile: tela 3 empilhada */
@@ -329,6 +392,9 @@
   </style>
 </head>
 <body>
+<!-- Marca fixa, sempre visível em qualquer tela e em qualquer device -->
+<span class="brand">Santola Corp.</span>
+
 <div id="app">
 
   <!-- ===================== TELA 1 ===================== -->
@@ -338,7 +404,6 @@
       <button class="btn-yes" onclick="goToScreen2()">CLARO!</button>
       <button class="btn-no" id="btnNo1" onmouseenter="runAway()" onclick="runAway()">Não.</button>
     </div>
-    <span class="brand">Santola Corp.</span>
   </div>
 
   <!-- ===================== TELA 2 ===================== -->
@@ -348,7 +413,6 @@
       <button class="btn-yes" onclick="goToScreen3()">MUITO!</button>
       <button class="btn-no" id="btnNo2" onclick="explodeBtn(this)">Não.</button>
     </div>
-    <span class="brand">Santola Corp.</span>
   </div>
 
   <!-- ===================== TELA 3: ROLETA ===================== -->
@@ -645,28 +709,113 @@
   function goToScreen2() { cleanRunaway(); goToScreen(2); }
 
   /* ============================================================
-     BOTÃO EXPLODINDO — tela 2
+     BOTÃO EXPLODINDO — tela 2 (versão espalhafatosa)
   ============================================================ */
   function explodeBtn(btn) {
     const rect = btn.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top  + rect.height / 2;
-    for (let i = 0; i < 18; i++) {
-      const p     = document.createElement('div');
-      p.className = 'particle';
-      const angle = (i / 18) * 360;
-      const dist  = 50 + Math.random() * 60;
-      const tx    = Math.cos(angle * Math.PI / 180) * dist + 'px';
-      const ty    = Math.sin(angle * Math.PI / 180) * dist + 'px';
-      p.style.cssText = `left:${cx}px;top:${cy}px;background:${['#FF4C3B','#FF8C00','#FFD700','#FF69B4'][i%4]};--tx:${tx};--ty:${ty};`;
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 700);
+    const cx   = rect.left + rect.width  / 2;
+    const cy   = rect.top  + rect.height / 2;
+    const cxPct = (cx / window.innerWidth  * 100).toFixed(1) + '%';
+    const cyPct = (cy / window.innerHeight * 100).toFixed(1) + '%';
+    const palette = ['#FF4C3B','#FF8C00','#FFD700','#FF69B4','#FF1493','#FFA500','#fff'];
+
+    // 1) Flash de tela
+    const flash = document.createElement('div');
+    flash.className = 'explosion-flash';
+    flash.style.setProperty('--cx', cxPct);
+    flash.style.setProperty('--cy', cyPct);
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+
+    // 2) Ondas de choque (3 anéis com delay)
+    [0, 120, 240].forEach((delay, i) => {
+      setTimeout(() => {
+        const sw = document.createElement('div');
+        sw.className = 'shockwave';
+        sw.style.cssText = `left:${cx}px;top:${cy}px;width:${60+i*20}px;height:${60+i*20}px;--dur:${0.7+i*0.15}s;`;
+        document.body.appendChild(sw);
+        setTimeout(() => sw.remove(), 1000);
+      }, delay);
+    });
+
+    // 3) Texto BOOM
+    const boom = document.createElement('div');
+    boom.className   = 'boom-text';
+    boom.textContent = ['💥 BOOM!','🔥 NAO!','💣 BYE!'][Math.floor(Math.random()*3)];
+    boom.style.cssText = `left:${cx}px;top:${cy - 60}px;`;
+    document.body.appendChild(boom);
+    setTimeout(() => boom.remove(), 800);
+
+    // 4) Partículas circulares — muitas, espalhadas por toda a tela
+    const PARTICLES = 60;
+    for (let i = 0; i < PARTICLES; i++) {
+      setTimeout(() => {
+        const p   = document.createElement('div');
+        p.className = 'particle';
+        const angle = Math.random() * 360;
+        const dist  = 80 + Math.random() * Math.max(window.innerWidth, window.innerHeight) * 0.55;
+        const size  = 8 + Math.random() * 18;
+        const dur   = 0.7 + Math.random() * 0.7;
+        const tx    = Math.cos(angle * Math.PI / 180) * dist + 'px';
+        const ty    = Math.sin(angle * Math.PI / 180) * dist + 'px';
+        const rot   = (Math.random() - 0.5) * 720 + 'deg';
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        p.style.cssText = `left:${cx}px;top:${cy}px;width:${size}px;height:${size}px;background:${color};--tx:${tx};--ty:${ty};--dur:${dur}s;--rot:${rot};`;
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), dur * 1000 + 100);
+      }, i * 12);
     }
-    btn.style.transition = 'transform 0.3s, opacity 0.3s';
-    btn.style.transform  = 'scale(2)';
+
+    // 5) Confetes retangulares coloridos
+    const CONFETTI = 40;
+    for (let i = 0; i < CONFETTI; i++) {
+      setTimeout(() => {
+        const c   = document.createElement('div');
+        c.className = 'confetti';
+        const angle = Math.random() * 360;
+        const dist  = 60 + Math.random() * window.innerWidth * 0.5;
+        const w     = 6 + Math.random() * 10;
+        const h     = 12 + Math.random() * 18;
+        const dur   = 0.9 + Math.random() * 0.6;
+        const tx    = Math.cos(angle * Math.PI / 180) * dist + 'px';
+        const ty    = Math.sin(angle * Math.PI / 180) * dist + 'px';
+        const rot   = (Math.random() - 0.5) * 900 + 'deg';
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        c.style.cssText = `left:${cx}px;top:${cy}px;width:${w}px;height:${h}px;background:${color};--tx:${tx};--ty:${ty};--dur:${dur}s;--rot:${rot};`;
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), dur * 1000 + 100);
+      }, i * 15);
+    }
+
+    // 6) Emojis voando para todo lado
+    const EMOJIS = ['💥','🔥','⚡','✨','🌟','💫','🎆','🎇'];
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        const e   = document.createElement('div');
+        e.className = 'particle';
+        e.textContent = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+        e.style.background = 'transparent';
+        e.style.fontSize   = clamp(20, 36) + 'px';
+        e.style.borderRadius = '0';
+        const angle = Math.random() * 360;
+        const dist  = 100 + Math.random() * window.innerWidth * 0.4;
+        const dur   = 0.8 + Math.random() * 0.5;
+        const tx    = Math.cos(angle * Math.PI / 180) * dist + 'px';
+        const ty    = Math.sin(angle * Math.PI / 180) * dist + 'px';
+        e.style.cssText += `left:${cx}px;top:${cy}px;--tx:${tx};--ty:${ty};--dur:${dur}s;--rot:${(Math.random()-0.5)*360}deg;`;
+        document.body.appendChild(e);
+        setTimeout(() => e.remove(), dur * 1000 + 100);
+      }, i * 30);
+    }
+
+    // 7) Botão some com animação dramática
+    btn.style.transition = 'transform 0.25s cubic-bezier(0.17,0.67,0.12,1.4), opacity 0.25s';
+    btn.style.transform  = 'scale(3) rotate(20deg)';
     btn.style.opacity    = '0';
-    setTimeout(() => btn.remove(), 350);
+    setTimeout(() => btn.remove(), 300);
   }
+
+  function clamp(min, max) { return min + Math.random() * (max - min); }
 </script>
 </body>
 </html>
